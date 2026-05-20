@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCE Task Manager (4 Columns - Live Sync v2)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <style>
+        .kanban-column { min-height: 450px; }
+        .image-preview-area {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.2s ease;
+        }
+        .image-preview-area:focus {
+            border-color: #4f46e5;
+        }
+
+        /* ระบบจัดการธีมมืด (Dark Mode) บังคับสไตล์ให้เนียนตา 100% */
+        html.dark, .dark body {
+            background-color: #0f172a !important; 
+            color: #f8fafc !important;
+        }
+        
+        .dark .bg-white {
+            background-color: #1e293b !important; 
+            border-color: #334155 !important;
+        }
+        .dark h2, .dark h3, .dark h4 {
+            color: #f1f5f9 !important;
+        }
+        .dark label {
+            color: #94a3b8 !important;
+        }
+        .dark input, .dark textarea {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+        .dark .image-preview-area {
+            background-color: rgba(15, 23, 42, 0.3) !important;
+            border-color: #475569 !important;
+        }
+        .dark .image-preview-area:focus {
+            border-color: #818cf8 !important;
+        }
+        
+        .dark #modalDesc {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+            color: #cbd5e1 !important;
+        }
+        .dark #modalImage {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+        }
+        
+        .dark .bg-slate-100 { background-color: rgba(30, 41, 59, 0.5) !important; border: 1px solid #334155; }
+        .dark .bg-emerald-50 { background-color: rgba(6, 78, 59, 0.15) !important; border: 1px solid #064e3b; }
+        .dark .bg-amber-50 { background-color: rgba(120, 53, 4, 0.15) !important; border: 1px solid #78350f; }
+        .dark .bg-sky-50 { background-color: rgba(12, 74, 96, 0.15) !important; border: 1px solid #0c4a60; }
+        
+        .dark .text-slate-700 { color: #cbd5e1 !important; }
+        .dark .text-emerald-800 { color: #34d399 !important; }
+        .dark .text-amber-800 { color: #fbbf24 !important; }
+        .dark .text-sky-800 { color: #38bdf8 !important; }
+        .dark .bg-slate-100 span, .dark .bg-emerald-50 span, .dark .bg-amber-50 span, .dark .bg-sky-50 span {
+            background-color: #334155 !important;
+            color: #f1f5f9 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen transition-colors duration-200">
+
+    <header class="bg-indigo-600 text-white p-4 shadow-md mb-8">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold">🚀 Project Tracker</h1>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleDarkMode()" id="themeBtn" class="flex items-center gap-2 bg-indigo-700 hover:bg-indigo-800 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer shadow-sm">
+                    🌙 โหมดมืด
+                </button>
+                <span class="text-sm bg-indigo-700 px-3 py-1 rounded-full hidden sm:inline">PCE Project</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4">
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm mb-8 border border-slate-100 transition-colors">
+            <h2 class="text-lg font-semibold mb-4 text-slate-700">➕ เพิ่มงานใหม่</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">ชื่องาน</label>
+                        <input type="text" id="taskTitle" placeholder="ชื่องาน เช่น ออกแบบหน้าแรก, แก้บั๊ก..." class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg focus:outline-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">ผู้รับผิดชอบ</label>
+                        <input type="text" id="taskAssignee" placeholder="ระบุชื่อ..." class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg focus:outline-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">คำอธิบายงาน (Task Description)</label>
+                        <textarea id="taskDesc" rows="4" placeholder="รายละเอียดงาน ขั้นตอนการทำ หรือโน้ตเพิ่มเติม..." class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg focus:outline-indigo-500 text-sm resize-none"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex flex-col">
+                    <label class="block text-sm font-medium text-slate-600 mb-1">วางรูปภาพประกอบ (คลิกแล้วกด Ctrl+V หรือลากไฟล์มาวางที่นี่)</label>
+                    <div id="imagePasteArea" tabindex="0" 
+                         class="image-preview-area flex-1 min-h-[180px] bg-slate-50 rounded-lg flex flex-col items-center justify-center p-4 cursor-pointer focus:outline-none"
+                         ondragover="handleDragOver(event)" 
+                         ondragleave="handleDragLeave(event)" 
+                         ondrop="handleFileDrop(event)">
+                        
+                        <div id="pastePrompt" class="text-center text-slate-400 pointer-events-none">
+                            <p class="text-3xl mb-2">📸</p>
+                            <p class="text-sm font-medium">กด <kbd class="bg-slate-200 px-1.5 py-0.5 rounded text-xs text-slate-600 font-mono font-bold">Ctrl + V</kbd> หรือ <span class="font-bold text-indigo-500">ลากรูปภาพมาวาง</span></p>
+                            <p class="text-xs mt-1">เพื่อวางภาพจาก Clipboard หรือหน้าจอที่แคปมา</p>
+                        </div>
+                        
+                        <div id="imagePreviewContainer" class="hidden w-full h-full relative flex items-center justify-center">
+                            <img id="imagePreview" src="" alt="Preview" class="max-h-[180px] rounded object-contain shadow-xs">
+                            <button onclick="clearPastedImage(event, 'add')" class="absolute top-0 right-0 bg-rose-500 text-white p-1 rounded-full text-xs hover:bg-rose-600 cursor-pointer w-6 h-6 flex items-center justify-center font-bold" title="ลบรูปภาพ">×</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button onclick="addNewTask()" class="w-full md:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition text-sm cursor-pointer shadow-sm">
+                    🚀 บันทึกงานเข้าบอร์ด
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <div class="bg-slate-100 p-4 rounded-xl flex flex-col border border-transparent">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2">📌 📋 รอดำเนินการ</h3>
+                    <span id="todo-count" class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                </div>
+                <div id="todo-list" class="kanban-column flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'todo')"></div>
+            </div>
+
+            <div class="bg-emerald-50 p-4 rounded-xl flex flex-col border border-transparent">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-emerald-800 flex items-center gap-2">✅ เสร็จสิ้น</h3>
+                    <span id="done-count" class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                </div>
+                <div id="done-list" class="kanban-column flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'done')"></div>
+            </div>
+
+            <div class="bg-amber-50 p-4 rounded-xl flex flex-col border border-transparent">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-amber-800 flex items-center gap-2">✏️ แก้ไข</h3>
+                    <span id="edit-count" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                </div>
+                <div id="edit-list" class="kanban-column flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'edit')"></div>
+            </div>
+
+            <div class="bg-sky-50 p-4 rounded-xl flex flex-col border border-transparent">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-bold text-sky-800 flex items-center gap-2">🎉 ตรวจผ่าน</h3>
+                    <span id="approved-count" class="bg-sky-100 text-sky-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                </div>
+                <div id="approved-list" class="kanban-column flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'approved')"></div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="taskModal" class="fixed inset-0 bg-black/60 z-40 hidden flex items-center justify-center p-4 shadow-2xl" onclick="closeModal()">
+        <div class="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
+                <div>
+                    <h2 id="modalTitle" class="text-xl font-bold"></h2>
+                    <p id="modalAssignee" class="text-sm text-slate-500 mt-1"></p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">&times;</button>
+            </div>
+            <div class="mb-4">
+                <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">รายละเอียดงาน</h4>
+                <p id="modalDesc" class="whitespace-pre-wrap text-sm bg-slate-50 p-3 rounded-lg border border-slate-100 text-slate-700 min-h-[60px]"></p>
+            </div>
+            <div id="modalImageContainer" class="hidden">
+                <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">รูปภาพประกอบ (คลิกที่รูปเพื่อขยายใหญ่)</h4>
+                <img id="modalImage" src="" alt="Task Image" class="w-full rounded-lg border border-slate-200 max-h-[400px] object-contain bg-slate-50 cursor-zoom-in hover:opacity-95 transition">
+            </div>
+        </div>
+    </div>
+
+    <div id="editModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 shadow-2xl" onclick="closeEditModal()">
+        <div class="bg-white rounded-xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-transparent" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pt-3">
+                <h2 class="text-lg font-bold">✏️ แก้ไขข้อมูลงาน</h2>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">&times;</button>
+            </div>
+            
+            <input type="hidden" id="editTaskId">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="flex flex-col gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">ชื่องาน</label>
+                        <input type="text" id="editTaskTitle" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm focus:outline-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">ผู้รับผิดชอบ</label>
+                        <input type="text" id="editTaskAssignee" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm focus:outline-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">คำอธิบายงาน</label>
+                        <textarea id="editTaskDesc" rows="4" class="w-full bg-slate-50 border border-slate-200 p-2 rounded-lg text-sm focus:outline-indigo-500 resize-none"></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col">
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">รูปภาพประกอบ (คลิกแล้วกด Ctrl+V เพื่อเปลี่ยนรูป)</label>
+                    <div id="editImagePasteArea" tabindex="0" class="image-preview-area flex-1 min-h-[180px] bg-slate-50 rounded-lg flex flex-col items-center justify-center p-4 cursor-pointer focus:outline-none">
+                        <div id="editPastePrompt" class="text-center text-slate-400 pointer-events-none">
+                            <p class="text-2xl mb-1">📸</p>
+                            <p class="text-xs font-medium">คลิกแล้วกด <kbd class="bg-slate-200 px-1 rounded text-slate-600 font-mono font-bold">Ctrl+V</kbd></p>
+                        </div>
+                        <div id="editImagePreviewContainer" class="hidden w-full h-full relative flex items-center justify-center">
+                            <img id="editImagePreview" src="" alt="Preview" class="max-h-[150px] rounded object-contain shadow-xs">
+                            <button onclick="clearPastedImage(event, 'edit')" class="absolute top-0 right-0 bg-rose-500 text-white p-1 rounded-full text-xs hover:bg-rose-600 cursor-pointer w-5 h-5 flex items-center justify-center font-bold">×</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-2 border-t border-slate-100 pt-3">
+                <button onclick="closeEditModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm rounded-lg transition cursor-pointer">ยกเลิก</button>
+                <button onclick="saveTaskEdit()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition cursor-pointer shadow-xs">บันทึกการแก้ไข</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="imageLightbox" class="fixed inset-0 bg-black/95 z-50 hidden flex items-center justify-center p-4 cursor-zoom-out" onclick="closeLightbox()">
+        <img id="lightboxImage" src="" alt="Enlarged Image" class="max-w-full max-h-full rounded-lg shadow-2xl object-contain transition-transform duration-300">
+    </div>
+
+    <script>
+        // ผูกลิงก์และกุญแจโปรเจกต์จริงของคุณ เคลียร์ปัญหาอักษรเล็ก-ใหญ่เรียบร้อย 
+        const SUPABASE_URL = "https://iweyopkcoohqzncdrrbu.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_EiScNYzdYSBL5YFnP4CSMw_MWv_OUjB";
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let tasks = [];
+        
+        // ตัวแปรเก็บไฟล์รูปภาพดิบ (Blob/File) แทนการแปลงเป็น Base64
+        let selectedFileBlob = null;
+        let editSelectedFileBlob = null;
+        let isImageClearedOrChanged = false;
+
+        async function fetchTasksOnline() {
+            const { data, error } = await supabaseClient.from('tasks').select('*').order('created_at', { ascending: true });
+            if (!error && data) {
+                tasks = data.map(item => ({
+                    id: item.id,
+                    title: item.title,
+                    assignee: item.assignee,
+                    desc: item.description,
+                    image: item.image,
+                    status: item.status
+                }));
+                renderTasks();
+            }
+        }
+
+        // ฟังก์ชันช่วยอัปโหลดไฟล์ดิบเข้าสู่ Supabase Storage Bucket
+        async function uploadToStorage(fileBlob, taskId) {
+            if (!fileBlob) return null;
+            const fileExt = fileBlob.type.split('/')[1] || 'png';
+            const fileName = `${taskId}-${Date.now()}.${fileExt}`;
+            
+            const { data, error } = await supabaseClient.storage
+                .from('task-images')
+                .upload(fileName, fileBlob, { cacheControl: '3600', upsert: true });
+                
+            if (error) {
+                console.error("Storage Upload Error:", error);
+                return null;
+            }
+            
+            // สร้าง Public URL เพื่อนำมาเปิดดูรูปบนหน้าจอเว็บ
+            const { data: urlData } = supabaseClient.storage
+                .from('task-images')
+                .getPublicUrl(fileName);
+                
+            return urlData.publicUrl;
+        }
+
+        function applyTheme(theme) {
+            const btn = document.getElementById('themeBtn');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                if(btn) btn.innerHTML = "☀️ โหมดสว่าง";
+            } else {
+                document.documentElement.classList.remove('dark');
+                if(btn) btn.innerHTML = "🌙 โหมดมืด";
+            }
+        }
+
+        let currentTheme = localStorage.getItem('theme') || 
+            (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(currentTheme);
+
+        function toggleDarkMode() {
+            currentTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+            localStorage.setItem('theme', currentTheme);
+            applyTheme(currentTheme);
+        }
+
+        const pasteArea = document.getElementById('imagePasteArea');
+        if(pasteArea) {
+            pasteArea.addEventListener('paste', function(e) {
+                handlePaste(e, (blob, base64) => {
+                    selectedFileBlob = blob;
+                    displayPreview(base64, 'add');
+                });
+            });
+            pasteArea.addEventListener('click', () => pasteArea.focus());
+        }
+
+        const editPasteArea = document.getElementById('editImagePasteArea');
+        if(editPasteArea) {
+            editPasteArea.addEventListener('paste', function(e) {
+                handlePaste(e, (blob, base64) => {
+                    editSelectedFileBlob = blob;
+                    isImageClearedOrChanged = true;
+                    displayPreview(base64, 'edit');
+                });
+            });
+            editPasteArea.addEventListener('click', () => editPasteArea.focus());
+        }
+
+        function handlePaste(e, callback) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        callback(blob, event.target.result);
+                    };
+                    reader.readAsDataURL(blob);
+                    e.preventDefault();
+                    break;
+                }
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            const area = document.getElementById('imagePasteArea');
+            if(!area) return;
+            area.style.borderColor = "#4f46e5";
+            if (document.documentElement.classList.contains('dark')) {
+                area.style.backgroundColor = "#1e1b4b";
+            } else {
+                area.style.backgroundColor = "#f5f3ff";
+            }
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            const area = document.getElementById('imagePasteArea');
+            if(area) {
+                area.style.borderColor = "";
+                area.style.backgroundColor = "";
+            }
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            handleDragLeave(e);
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.indexOf('image') !== -1) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        selectedFileBlob = file;
+                        displayPreview(event.target.result, 'add');
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('กรุณาวางเฉพาะไฟล์รูปภาพเท่านั้นครับ');
+                }
+            }
+        }
+
+        function openLightbox(src) {
+            const lightbox = document.getElementById('imageLightbox');
+            const lightboxImg = document.getElementById('lightboxImage');
+            lightboxImg.src = src;
+            lightbox.classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('imageLightbox');
+            lightbox.classList.add('hidden');
+            document.getElementById('lightboxImage').src = "";
+        }
+
+        function displayPreview(base64Data, mode) {
+            const prefix = mode === 'edit' ? 'edit' : '';
+            document.getElementById(prefix ? 'editPastePrompt' : 'pastePrompt').classList.add('hidden');
+            document.getElementById(prefix ? 'editImagePreviewContainer' : 'imagePreviewContainer').classList.remove('hidden');
+            document.getElementById(prefix ? 'editImagePreview' : 'imagePreview').src = base64Data;
+        }
+
+        function clearPastedImage(event, mode) {
+            if (event) event.stopPropagation();
+            if (mode === 'edit') {
+                editSelectedFileBlob = null;
+                isImageClearedOrChanged = true;
+                document.getElementById('editImagePreview').src = "";
+                document.getElementById('editImagePreviewContainer').classList.add('hidden');
+                document.getElementById('editPastePrompt').classList.remove('hidden');
+            } else {
+                selectedFileBlob = null;
+                document.getElementById('imagePreview').src = "";
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('pastePrompt').classList.remove('hidden');
+            }
+        }
+
+        function renderTasks() {
+            const columns = {
+                todo: document.getElementById('todo-list'),
+                done: document.getElementById('done-list'),
+                edit: document.getElementById('edit-list'),
+                approved: document.getElementById('approved-list')
+            };
+            
+            Object.values(columns).forEach(col => { if(col) col.innerHTML = ''; });
+
+            tasks.forEach(task => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 p-4 rounded-lg shadow-xs border border-slate-100 dark:border-slate-700/60 cursor-grab active:cursor-grabbing hover:border-indigo-300 dark:hover:border-indigo-500 transition flex flex-col gap-2';
+                card.draggable = true;
+                card.id = task.id;
+                card.ondragstart = (e) => e.dataTransfer.setData('text/plain', task.id);
+                card.onclick = () => openModal(task);
+                
+                let imgHtml = "";
+                if (task.image) {
+                    imgHtml = `<img src="${task.image}" class="w-full h-24 object-cover rounded border border-slate-100 dark:border-slate-700 my-1" alt="thumbnail">`;
+                }
+
+                let descSnippet = task.desc ? task.desc.substring(0, 60) + (task.desc.length > 60 ? '...' : '') : 'ไม่มีคำอธิบาย';
+
+                card.innerHTML = `
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-slate-800 dark:text-slate-100 leading-tight">${task.title}</h4>
+                        <p class="text-xs text-slate-400 dark:text-slate-400 mt-1 line-clamp-2">${descSnippet}</p>
+                        ${imgHtml}
+                    </div>
+                    <div class="flex justify-between items-center mt-2 pt-2 border-t border-slate-50 dark:border-slate-700/50 text-xs">
+                        <span class="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-sm">👤 ${task.assignee || 'ไม่ระบุ'}</span>
+                        <div class="flex gap-2">
+                            <button onclick="openEditModal(event, '${task.id}')" class="text-rose-500 hover:text-rose-700 cursor-pointer font-medium">แก้ไข</button>
+                            <button onclick="deleteTask(event, '${task.id}')" class="text-rose-500 hover:text-rose-700 cursor-pointer font-medium">ลบ</button>
+                        </div>
+                    </div>
+                `;
+                
+                if (columns[task.status]) {
+                    columns[task.status].appendChild(card);
+                }
+            });
+
+            if(document.getElementById('todo-count')) document.getElementById('todo-count').innerText = tasks.filter(t => t.status === 'todo').length;
+            if(document.getElementById('done-count')) document.getElementById('done-count').innerText = tasks.filter(t => t.status === 'done').length;
+            if(document.getElementById('edit-count')) document.getElementById('edit-count').innerText = tasks.filter(t => t.status === 'edit').length;
+            if(document.getElementById('approved-count')) document.getElementById('approved-count').innerText = tasks.filter(t => t.status === 'approved').length;
+        }
+
+        // ระบบบันทึกงานใหม่: อัปโหลดรูปภาพขึ้น Storage ก่อน แล้วค่อยบันทึกลงฐานข้อมูล
+        async function addNewTask() {
+            const titleInput = document.getElementById('taskTitle');
+            const assigneeInput = document.getElementById('taskAssignee');
+            const descInput = document.getElementById('taskDesc');
+
+            if (!titleInput.value.trim()) return alert('กรุณากรอกชื่องานด้วยครับ');
+
+            const taskId = 'task-' + Date.now();
+            let imageUrl = "";
+
+            // หากมีการวางรูปภาพ ให้ส่งรูปดิบขึ้นถัง Storage ก่อน
+            if (selectedFileBlob) {
+                imageUrl = await uploadToStorage(selectedFileBlob, taskId) || "";
+            }
+
+            const newTask = {
+                id: taskId,
+                title: titleInput.value,
+                assignee: assigneeInput.value,
+                description: descInput.value,
+                image: imageUrl, // เก็บเป็นลิงก์ URL สั้นๆ ประหยัดพื้นที่ฐานข้อมูล
+                status: 'todo'
+            };
+
+            const { error } = await supabaseClient.from('tasks').insert([newTask]);
+            if (!error) {
+                titleInput.value = '';
+                assigneeInput.value = '';
+                descInput.value = '';
+                clearPastedImage(null, 'add');
+                fetchTasksOnline();
+            } else {
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูลออนไลน์');
+            }
+        }
+
+        function openEditModal(event, id) {
+            event.stopPropagation();
+            const task = tasks.find(t => t.id === id);
+            if (!task) return;
+
+            document.getElementById('editTaskId').value = task.id;
+            document.getElementById('editTaskTitle').value = task.title;
+            document.getElementById('editTaskAssignee').value = task.assignee || '';
+            document.getElementById('editTaskDesc').value = task.desc || '';
+            
+            editSelectedFileBlob = null;
+            isImageClearedOrChanged = false;
+
+            if (task.image) {
+                displayPreview(task.image, 'edit');
+            } else {
+                clearPastedImage(null, 'edit');
+                isImageClearedOrChanged = false; 
+            }
+
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        // ระบบบันทึกการแก้ไขงานออนไลน์
+        async function saveTaskEdit() {
+            const id = document.getElementById('editTaskId').value;
+            const title = document.getElementById('editTaskTitle').value;
+            const assignee = document.getElementById('editTaskAssignee').value;
+            const desc = document.getElementById('editTaskDesc').value;
+
+            if (!title.trim()) return alert('ชื่องานห้ามว่างครับ');
+
+            const currentTask = tasks.find(t => t.id === id);
+            let finalImageUrl = currentTask ? currentTask.image : "";
+
+            if (isImageClearedOrChanged) {
+                if (editSelectedFileBlob) {
+                    finalImageUrl = await uploadToStorage(editSelectedFileBlob, id) || "";
+                } else {
+                    finalImageUrl = "";
+                }
+            }
+
+            const { error } = await supabaseClient.from('tasks').update({
+                title: title,
+                assignee: assignee,
+                description: desc,
+                image: finalImageUrl
+            }).eq('id', id);
+
+            if (!error) {
+                closeEditModal();
+                fetchTasksOnline();
+            } else {
+                alert('ไม่สามารถแก้ไขข้อมูลออนไลน์ได้');
+            }
+        }
+
+        async function deleteTask(event, id) {
+            event.stopPropagation();
+            if (confirm('คุณต้องการลบงานนี้ใช่หรือไม่?')) {
+                const { error } = await supabaseClient.from('tasks').delete().eq('id', id);
+                if (!error) {
+                    fetchTasksOnline();
+                } else {
+                    alert('ไม่สามารถลบข้อมูลบนออนไลน์ได้');
+                }
+            }
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        
+        async function drop(ev, targetStatus) {
+            ev.preventDefault();
+            const taskId = ev.dataTransfer.getData('text/plain');
+            const { error } = await supabaseClient.from('tasks').update({ status: targetStatus }).eq('id', taskId);
+            if (!error) {
+                fetchTasksOnline();
+            }
+        }
+
+        function openModal(task) {
+            document.getElementById('modalTitle').innerText = task.title;
+            document.getElementById('modalAssignee').innerText = `ผู้รับผิดชอบ: ${task.assignee || 'ไม่ระบุ'}`;
+            document.getElementById('modalDesc').innerText = task.desc || 'ไม่มีคำอธิบายงานเพิ่มเติม';
+            
+            const modalImgContainer = document.getElementById('modalImageContainer');
+            const modalImg = document.getElementById('modalImage');
+            
+            if (task.image) {
+                modalImgContainer.classList.remove('hidden');
+                modalImg.src = task.image;
+                modalImg.onclick = () => openLightbox(task.image);
+            } else {
+                modalImgContainer.classList.add('hidden');
+                modalImg.src = "";
+                modalImg.onclick = null;
+            }
+            document.getElementById('taskModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('taskModal').classList.add('hidden');
+        }
+
+        fetchTasksOnline();
+        // ตั้งหน้าระบบอัปเดตเรียลไทม์เช็กบอร์ดทุกๆ 5 วินาที
+        setInterval(fetchTasksOnline, 5000);
+    </script>
+</body>
+</html>
