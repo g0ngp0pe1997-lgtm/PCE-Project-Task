@@ -248,6 +248,10 @@
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let tasks = [];
+
+        // ➕ เพิ่มบรรทัดนี้เพื่อดักจับรหัสโปรเจกต์ที่เปิดอยู่
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentProjectId = urlParams.get('proj') || 'default';
         
         // ตัวแปรเก็บไฟล์รูปภาพดิบ (Blob/File) แทนการแปลงเป็น Base64
         let selectedFileBlob = null;
@@ -255,7 +259,7 @@
         let isImageClearedOrChanged = false;
 
         async function fetchTasksOnline() {
-            const { data, error } = await supabaseClient.from('tasks').select('*').order('created_at', { ascending: true });
+            const { data, error } = await supabaseClient.from('tasks').select('*').eq('project_id', currentProjectId).order('created_at', { ascending: true });
             if (!error && data) {
                 tasks = data.map(item => ({
                     id: item.id,
@@ -502,6 +506,7 @@
                 description: descInput.value,
                 image: imageUrl, // เก็บเป็นลิงก์ URL สั้นๆ ประหยัดพื้นที่ฐานข้อมูล
                 status: 'todo'
+                project_id: currentProjectId
             };
 
             const { error } = await supabaseClient.from('tasks').insert([newTask]);
