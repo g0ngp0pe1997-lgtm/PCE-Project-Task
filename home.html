@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCE Project Hub - Home</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <style>
+        .image-preview-area {
+            border: 2px dashed #cbd5e1;
+            transition: all 0.2s ease;
+        }
+        .image-preview-area:focus {
+            border-color: #4f46e5;
+        }
+
+        html.dark, .dark body {
+            background-color: #0f172a !important; 
+            color: #f8fafc !important;
+        }
+        .dark .bg-white {
+            background-color: #1e293b !important; 
+            border-color: #334155 !important;
+        }
+        .dark h2, .dark h3, .dark h4 {
+            color: #f1f5f9 !important;
+        }
+        .dark label {
+            color: #94a3b8 !important;
+        }
+        .dark input {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+        .dark .image-preview-area {
+            background-color: rgba(15, 23, 42, 0.3) !important;
+            border-color: #475569 !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen transition-colors duration-200">
+
+    <header class="bg-indigo-600 text-white p-4 shadow-md mb-8">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2">📂 PCE Project Hub</h1>
+            <div class="flex items-center gap-4">
+                <button onclick="openNewProjectModal()" class="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition cursor-pointer shadow-sm">
+                    ➕ New Project
+                </button>
+                <button onclick="toggleDarkMode()" id="themeBtn" class="flex items-center gap-2 bg-indigo-700 hover:bg-indigo-800 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer shadow-sm">
+                    🌙 โหมดมืด
+                </button>
+                <span class="text-sm bg-indigo-700 px-3 py-1 rounded-full hidden sm:inline">PCE Project</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4">
+        <h2 class="text-xl font-bold mb-6 text-slate-700 flex items-center gap-2">📋 รายชื่อโปรเจกต์ทั้งหมด</h2>
+        
+        <div id="projectContainer" class="flex flex-col gap-4">
+            <div class="text-center text-slate-400 py-12">กำลังโหลดข้อมูลโปรเจกต์...</div>
+        </div>
+    </main>
+
+    <div id="projectModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 shadow-2xl" onclick="closeNewProjectModal()">
+        <div class="bg-white rounded-xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto border border-transparent" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h2 class="text-lg font-bold">📂 สร้างโปรเจกต์ใหม่</h2>
+                <button onclick="closeNewProjectModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">&times;</button>
+            </div>
+            
+            <div class="flex flex-col gap-4 mb-5">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">ชื่อโปรเจกต์</label>
+                    <input type="text" id="projectName" placeholder="เช่น PCE ทีม A, งานออกแบบกราฟิก..." class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg focus:outline-indigo-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">ผู้เข้าร่วมโปรเจกต์</label>
+                    <input type="text" id="projectMembers" placeholder="เช่น เอ, บี, ซี (ใช้เครื่องหมายจุลภาคคั่นชื่อ)" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg focus:outline-indigo-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">รูปหน้าปกโปรเจกต์ (คลิกแล้วกด Ctrl+V หรือลากวาง)</label>
+                    <div id="projectImageArea" tabindex="0" class="image-preview-area min-h-[140px] bg-slate-50 rounded-lg flex flex-col items-center justify-center p-4 cursor-pointer focus:outline-none">
+                        <div id="pastePrompt" class="text-center text-slate-400 pointer-events-none">
+                            <p class="text-2xl mb-1">📸</p>
+                            <p class="text-xs font-medium">กด <kbd class="bg-slate-200 px-1 rounded text-slate-600 font-mono text-[10px] font-bold">Ctrl + V</kbd> หรือลากรูปมาวาง</p>
+                        </div>
+                        <div id="imagePreviewContainer" class="hidden w-full relative flex items-center justify-center">
+                            <img id="imagePreview" src="" alt="Preview" class="max-h-[130px] rounded object-contain shadow-xs">
+                            <button onclick="clearPastedImage(event)" class="absolute top-0 right-0 bg-rose-500 text-white p-1 rounded-full text-xs hover:bg-rose-600 cursor-pointer w-5 h-5 flex items-center justify-center font-bold">×</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-2 border-t border-slate-100 pt-3">
+                <button onclick="closeNewProjectModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm rounded-lg transition cursor-pointer">ยกเลิก</button>
+                <button onclick="createNewProject()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition cursor-pointer shadow-xs">สร้างโปรเจกต์</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ อย่าลืมให้เพื่อนนำกุญแจของบัญชีใหม่มาวางในเครื่องหมายคำพูดนะครับ
+        const SUPABASE_URL = "https://gmmjspsxqzknrltmihfs.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_MVVp7QwtiOyliz2m3cYJaQ_mMnsfVB7";
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let selectedFileBlob = null;
+
+        async function fetchProjects() {
+            const { data, error } = await supabaseClient.from('projects').select('*').order('created_at', { ascending: false });
+            if (error) {
+                document.getElementById('projectContainer').innerHTML = `<div class="text-center text-rose-500 py-12">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>`;
+                return;
+            }
+            renderProjects(data);
+        }
+
+        async function uploadCoverImage(fileBlob, projectId) {
+            if (!fileBlob) return null;
+            const fileExt = fileBlob.type.split('/')[1] || 'png';
+            const fileName = `cover-${projectId}-${Date.now()}.${fileExt}`;
+            const { error } = await supabaseClient.storage.from('task-images').upload(fileName, fileBlob, { cacheControl: '3600', upsert: true });
+            if (error) return null;
+            const { data: urlData } = supabaseClient.storage.from('task-images').getPublicUrl(fileName);
+            return urlData.publicUrl;
+        }
+
+        async function createNewProject() {
+            const nameInput = document.getElementById('projectName');
+            const membersInput = document.getElementById('projectMembers');
+            if (!nameInput.value.trim()) return alert('กรุณากรอกชื่อโปรเจกต์ด้วยครับ');
+
+            const projectId = 'proj-' + Date.now();
+            let coverUrl = "";
+
+            if (selectedFileBlob) {
+                coverUrl = await uploadCoverImage(selectedFileBlob, projectId) || "";
+            }
+
+            const newProject = {
+                id: projectId,
+                name: nameInput.value,
+                members: membersInput.value || 'ไม่ระบุผู้เข้าร่วม',
+                cover_image: coverUrl
+            };
+
+            const { error } = await supabaseClient.from('projects').insert([newProject]);
+            if (!error) {
+                nameInput.value = '';
+                membersInput.value = '';
+                clearPastedImage(null);
+                closeNewProjectModal();
+                fetchProjects();
+            } else {
+                alert('เกิดข้อผิดพลาดในการสร้างโปรเจกต์');
+            }
+        }
+
+        function renderProjects(projects) {
+            const container = document.getElementById('projectContainer');
+            if (projects.length === 0) {
+                container.innerHTML = `<div class="text-center text-slate-400 py-12 bg-white dark:bg-slate-800 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">ยังไม่มีโปรเจกต์ในระบบ กด "New Project" ด้านบนเพื่อเริ่มสร้างได้เลยครับ</div>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            projects.forEach(project => {
+                const item = document.createElement('div');
+                // เมื่อกดที่ลิสต์แถวโปรเจกต์ จะวิ่งไปเปิดหน้าสลับบอร์ด index.html พร้อมส่งรหัส ID ติดไปทาง URL
+                item.className = 'bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xs border border-slate-100 dark:border-slate-700 flex items-center gap-4 hover:border-indigo-400 dark:hover:border-indigo-500 transition cursor-pointer group relative';
+                item.onclick = () => window.location.href = `index.html?proj=${project.id}`;
+
+                let imgHtml = `<div class="w-16 h-16 bg-indigo-50 dark:bg-slate-900 rounded-lg flex items-center justify-center text-2xl shrink-0">📂</div>`;
+                if (project.cover_image) {
+                    imgHtml = `<img src="${project.cover_image}" class="w-16 h-16 object-cover rounded-lg border border-slate-100 dark:border-slate-700 shrink-0" alt="cover">`;
+                }
+
+                item.innerHTML = `
+                    ${imgHtml}
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate">${project.name}</h3>
+                        <p class="text-xs text-slate-400 dark:text-slate-400 mt-1.5 truncate">👤 ผู้เข้าร่วม: ${project.members}</p>
+                    </div>
+                    <button onclick="deleteProject(event, '${project.id}')" class="text-slate-300 hover:text-rose-500 font-bold text-sm px-2 py-1 transition cursor-pointer opacity-0 group-hover:opacity-100 absolute right-4 top-1/2 -translate-y-1/2">ลบโปรเจกต์</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function deleteProject(event, id) {
+            event.stopPropagation();
+            if (confirm('หากลบโปรเจกต์นี้ งานทั้งหมดในระบบของโปรเจกต์นี้จะถูกลบไปด้วย คุณต้องการลบใช่หรือไม่?')) {
+                await supabaseClient.from('tasks').delete().eq('project_id', id);
+                const { error } = await supabaseClient.from('projects').delete().eq('id', id);
+                if (!error) fetchProjects();
+            }
+        }
+
+        function openNewProjectModal() { document.getElementById('projectModal').classList.remove('hidden'); }
+        function closeNewProjectModal() { document.getElementById('projectModal').classList.add('hidden'); }
+
+        function applyTheme(theme) {
+            const btn = document.getElementById('themeBtn');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                if(btn) btn.innerHTML = "☀️ โหมดสว่าง";
+            } else {
+                document.documentElement.classList.remove('dark');
+                if(btn) btn.innerHTML = "🌙 โหมดมืด";
+            }
+        }
+        let currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        applyTheme(currentTheme);
+        function toggleDarkMode() { currentTheme = (currentTheme === 'dark') ? 'light' : 'dark'; localStorage.setItem('theme', currentTheme); applyTheme(currentTheme); }
+
+        const pasteArea = document.getElementById('projectImageArea');
+        if(pasteArea) {
+            pasteArea.addEventListener('paste', function(e) {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        const blob = items[i].getAsFile();
+                        selectedFileBlob = blob;
+                        const reader = new FileReader();
+                        reader.onload = function(event) { displayPreview(event.target.result); };
+                        reader.readAsDataURL(blob);
+                        e.preventDefault();
+                        break;
+                    }
+                }
+            });
+            pasteArea.addEventListener('click', () => pasteArea.focus());
+        }
+
+        function displayPreview(base64Data) {
+            document.getElementById('pastePrompt').classList.add('hidden');
+            document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            document.getElementById('imagePreview').src = base64Data;
+        }
+
+        function clearPastedImage(event) {
+            if (event) event.stopPropagation();
+            selectedFileBlob = null;
+            document.getElementById('imagePreview').src = "";
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('pastePrompt').classList.remove('hidden');
+        }
+
+        fetchProjects();
+        setInterval(fetchProjects, 5000);
+    </script>
+</body>
+</html>
