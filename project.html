@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCE Task Manager (4 Columns - Live Sync v2)</title>
+    <title>project</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <style>
@@ -73,7 +73,7 @@
 
     <header class="bg-indigo-600 text-white p-4 shadow-md mb-8">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold flex items-center gap-2">🚀 Project Tracker</h1>
+            <h1 id="projectHeaderTitle" class="text-xl font-bold flex items-center gap-2">🔄 กำลังโหลดชื่อโปรเจกต์...</h1>
             <div class="flex items-center gap-4">
                 <button onclick="window.location.href='index.html'" class="bg-indigo-700 hover:bg-indigo-800 px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition">
                     🏠 กลับหน้าหลัก
@@ -81,7 +81,7 @@
                 <button onclick="toggleDarkMode()" id="themeBtn" class="flex items-center gap-2 bg-indigo-700 hover:bg-indigo-800 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer shadow-sm">
                     🌙 โหมดมืด
                 </button>
-                <span class="text-sm bg-indigo-700 px-3 py-1 rounded-full hidden sm:inline">PCE Project</span>
+                <span id="projectBadge" class="text-sm bg-indigo-700 px-3 py-1 rounded-full hidden sm:inline max-w-[120px] truncate" title="PCE Project">PCE Project</span>
             </div>
         </div>
     </header>
@@ -626,6 +626,28 @@
 
         fetchTasksOnline();
         setInterval(fetchTasksOnline, 5000);
+        // ➕ ฟังก์ชันดึงชื่อของโปรเจกต์ปัจจุบันมาโชว์ที่หัวเว็บและป้ายแคปซูลขวาบน
+        async function fetchProjectName() {
+            if(currentProjectId === 'default') {
+                document.getElementById('projectHeaderTitle').innerText = "📋 บอร์ดงานทั่วไป";
+                return;
+            }
+            const { data, error } = await supabaseClient.from('projects').select('name').eq('id', currentProjectId).single();
+            if (!error && data) {
+                // 1. เปลี่ยนชื่อที่หัวข้อหลักด้านบน
+                document.getElementById('projectHeaderTitle').innerText = `📂 ${data.name}`;
+                document.title = `${data.name} - PCE Task Manager`;
+                
+                // 2. เปลี่ยนชื่อที่ป้ายวงกลมแคปซูลขวาบน (พร้อมระบบตัดคำถ้ายาวเกินไป)
+                const badge = document.getElementById('projectBadge');
+                if (badge) {
+                    badge.innerText = data.name;
+                    badge.title = data.name; // เอาเมาส์ชี้แล้วเห็นชื่อเต็ม
+                }
+            } else {
+                document.getElementById('projectHeaderTitle').innerText = "📂 ไม่พบโครงการ";
+            }
+        }
     </script>
 </body>
 </html>
