@@ -173,7 +173,7 @@
                 const item = document.createElement('div');
                 // เมื่อกดที่ลิสต์แถวโปรเจกต์ จะวิ่งไปเปิดหน้าสลับบอร์ด index.html พร้อมส่งรหัส ID ติดไปทาง URL
                 item.className = 'bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xs border border-slate-100 dark:border-slate-700 flex items-center gap-4 hover:border-indigo-400 dark:hover:border-indigo-500 transition cursor-pointer group relative';
-                item.onclick = () => window.location.href = `index.html?proj=${project.id}`;
+                item.onclick = () => window.location.href = `project.html?proj=${project.id}`;
 
                 let imgHtml = `<div class="w-16 h-16 bg-indigo-50 dark:bg-slate-900 rounded-lg flex items-center justify-center text-2xl shrink-0">📂</div>`;
                 if (project.cover_image) {
