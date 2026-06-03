@@ -63,6 +63,7 @@
         </div>
     </main>
 
+    <!-- หน้าต่าง Popup สำหรับสร้างโปรเจกต์ใหม่ -->
     <div id="projectModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 shadow-2xl" onclick="closeNewProjectModal()">
         <div class="bg-white rounded-xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto border border-transparent" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
@@ -88,7 +89,7 @@
                         </div>
                         <div id="imagePreviewContainer" class="hidden w-full h-full relative flex items-center justify-center">
                             <img id="imagePreview" src="" alt="Preview" class="max-h-[130px] rounded object-contain shadow-xs">
-                            <button onclick="clearPastedImage(event)" class="absolute top-0 right-0 bg-rose-500 text-white p-1 rounded-full text-xs hover:bg-rose-600 cursor-pointer w-5 h-5 flex items-center justify-center font-bold">×</button>
+                            <button onclick="clearPastedImage(event, 'add')" class="absolute top-0 right-0 bg-rose-500 text-white p-1 rounded-full text-xs hover:bg-rose-600 cursor-pointer w-5 h-5 flex items-center justify-center font-bold">×</button>
                         </div>
                     </div>
                 </div>
@@ -101,19 +102,49 @@
         </div>
     </div>
 
-    <div id="settingsModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4" onclick="closeSettingsModal()">
-        <div class="bg-white rounded-xl p-5 max-w-sm w-full border border-transparent" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                <h3 id="settingsModalTitle" class="font-bold text-slate-800">⚙️ ตั้งค่าโปรเจกต์</h3>
-                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 text-lg font-bold cursor-pointer">&times;</button>
+    <!-- หน้าต่าง Popup สำหรับตั้งค่าและแก้ไขโปรเจกต์ (Settings & Edit Modal) -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 shadow-2xl" onclick="closeSettingsModal()">
+        <div class="bg-white rounded-xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto border border-transparent" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
+                <h3 id="settingsModalTitle" class="font-bold text-slate-800 text-lg">⚙️ ตั้งค่าโปรเจกต์</h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer">&times;</button>
             </div>
             
             <input type="hidden" id="settingsProjectId">
-            <div class="flex flex-col gap-3 py-2">
-                <p class="text-xs text-slate-400 leading-normal">จัดการระบบภายในโครงการ หากกดลบระบบจะทำลายฐานข้อมูลงานทั้งหมดในห้องนี้ทิ้งถาวร</p>
-                <button onclick="confirmDeleteFromSettings()" class="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold rounded-lg text-sm transition cursor-pointer text-center">
-                    🚨 ลบโปรเจกต์นี้ทิ้ง
-                </button>
+            <div class="flex flex-col gap-4 mb-5">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">แก้ไขชื่อโปรเจกต์</label>
+                    <input type="text" id="editProjectName" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg focus:outline-indigo-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">แก้ไขผู้เข้าร่วมโปรเจกต์</label>
+                    <input type="text" id="editProjectMembers" class="w-full bg-slate-50 border border-slate-200 p-2.5 rounded-lg focus:outline-indigo-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">เปลี่ยนรูปหน้าปกโปรเจกต์ (คลิกแล้วกด Ctrl+V เพื่อวางรูปใหม่)</label>
+                    <div id="editProjectImageArea" tabindex="0" class="image-preview-area min-h-[140px] bg-slate-50 rounded-lg flex flex-col items-center justify-center p-4 cursor-pointer focus:outline-none">
+                        <div id="editPastePrompt" class="text-center text-slate-400 pointer-events-none">
+                            <p class="text-2xl mb-1">📸</p>
+                            <p class="text-xs font-medium">คลิกที่นี่แล้วกด <kbd class="bg-slate-200 px-1 rounded text-slate-600 font-mono text-[10px] font-bold">Ctrl + V</kbd> เพื่อเปลี่ยนรูป</p>
+                        </div>
+                        <div id="editImagePreviewContainer" class="hidden w-full h-full relative flex items-center justify-center">
+                            <img id="editImagePreview" src="" alt="Preview" class="max-h-[130px] rounded object-contain shadow-xs">
+                            <button onclick="clearPastedImage(event, 'edit')" class="absolute top-0 right-0 bg-rose-500 text-white p-1 rounded-full text-xs hover:bg-rose-600 cursor-pointer w-5 h-5 flex items-center justify-center font-bold">×</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-3 mt-2">
+                    <p class="text-xs text-slate-400 leading-normal mb-2">🚨 โซนอันตราย: หากกดลบระบบจะทำลายฐานข้อมูลงานทั้งหมดในห้องนี้ทิ้งถาวร</p>
+                    <button onclick="confirmDeleteFromSettings()" class="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold rounded-lg text-xs transition cursor-pointer text-center border border-rose-200">
+                        ลบโปรเจกต์นี้ทิ้งถาวร
+                    </button>
+                </div>
+            </div>
+            
+            <div class="flex justify-end gap-2 border-t border-slate-100 pt-3">
+                <button onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm rounded-lg transition cursor-pointer">ยกเลิก</button>
+                <button onclick="saveProjectEdit()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition cursor-pointer shadow-xs">บันทึกการแก้ไขโปรเจกต์</button>
             </div>
         </div>
     </div>
@@ -123,7 +154,10 @@
         const SUPABASE_ANON_KEY = "sb_publishable_MVVp7QwtiOyliz2m3cYJaQ_mMnsfVB7";
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        let projectsList = []; // เก็บอาร์เรย์โปรเจกต์ทั้งหมดไว้ใช้อ้างอิงตอนแก้ไขข้อมูล
         let selectedFileBlob = null;
+        let editSelectedFileBlob = null;
+        let isProjectImageChanged = false;
 
         async function fetchProjects() {
             const { data, error } = await supabaseClient.from('projects').select('*').order('created_at', { ascending: false });
@@ -131,6 +165,7 @@
                 document.getElementById('projectContainer').innerHTML = `<div class="text-center text-rose-500 py-12">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>`;
                 return;
             }
+            projectsList = data; // อัปเดตข้อมูลลิสต์โปรเจกต์หลัก
             renderProjects(data);
         }
 
@@ -167,7 +202,7 @@
             if (!error) {
                 nameInput.value = '';
                 membersInput.value = '';
-                clearPastedImage(null);
+                clearPastedImage(null, 'add');
                 closeNewProjectModal();
                 fetchProjects();
             } else {
@@ -199,7 +234,7 @@
                         <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate">${project.name}</h3>
                         <p class="text-xs text-slate-400 dark:text-slate-400 mt-1.5 truncate">👤 ผู้เข้าร่วม: ${project.members}</p>
                     </div>
-                    <button onclick="openSettingsModal(event, '${project.id}', '${project.name.replace(/'/g, "\\'")}')" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 text-lg transition cursor-pointer opacity-0 group-hover:opacity-100 absolute right-4 top-1/2 -translate-y-1/2" title="ตั้งค่าโปรเจกต์">
+                    <button onclick="openSettingsModal(event, '${project.id}')" class="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-2 text-lg transition cursor-pointer opacity-0 group-hover:opacity-100 absolute right-4 top-1/2 -translate-y-1/2" title="ตั้งค่าโปรเจกต์">
                         ⚙️
                     </button>
                 `;
@@ -207,15 +242,65 @@
             });
         }
 
-        function openSettingsModal(event, id, name) {
+        // ระบบเปิดหน้าต่างตั้งค่าพร้อมโหลดค่าเดิมมาหยอดลงช่องฟอร์ม
+        function openSettingsModal(event, id) {
             event.stopPropagation();
-            document.getElementById('settingsProjectId').value = id;
-            document.getElementById('settingsModalTitle').innerText = `⚙️ ตั้งค่า: ${name}`;
+            const project = projectsList.find(p => p.id === id);
+            if (!project) return;
+
+            document.getElementById('settingsProjectId').value = project.id;
+            document.getElementById('settingsModalTitle').innerText = `⚙️ ตั้งค่า: ${project.name}`;
+            document.getElementById('editProjectName').value = project.name;
+            document.getElementById('editProjectMembers').value = project.members || '';
+            
+            editSelectedFileBlob = null;
+            isProjectImageChanged = false;
+
+            if (project.cover_image) {
+                displayPreview(project.cover_image, 'edit');
+            } else {
+                clearPastedImage(null, 'edit');
+                isProjectImageChanged = false;
+            }
+
             document.getElementById('settingsModal').classList.remove('hidden');
         }
 
         function closeSettingsModal() {
             document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        // ฟังก์ชันช่วยอัปเดตบันทึกข้อมูลแก้ไขโปรเจกต์ลง Supabase Database
+        async function saveProjectEdit() {
+            const id = document.getElementById('settingsProjectId').value;
+            const name = document.getElementById('editProjectName').value;
+            const members = document.getElementById('editProjectMembers').value;
+
+            if (!name.trim()) return alert('ชื่อโปรเจกต์ห้ามว่างครับ');
+
+            const currentProject = projectsList.find(p => p.id === id);
+            let finalCoverUrl = currentProject ? currentProject.cover_image : "";
+
+            if (isProjectImageChanged) {
+                if (editSelectedFileBlob) {
+                    finalCoverUrl = await uploadCoverImage(editSelectedFileBlob, id) || "";
+                } else {
+                    finalCoverUrl = "";
+                }
+            }
+
+            const { error } = await supabaseClient.from('projects').update({
+                name: name,
+                members: members || 'ไม่ระบุผู้เข้าร่วม',
+                cover_image: finalCoverUrl
+            }).eq('id', id);
+
+            if (!error) {
+                closeSettingsModal();
+                fetchProjects();
+            } else {
+                alert('ไม่สามารถแก้ไขข้อมูลโปรเจกต์ออนไลน์ได้');
+            }
         }
 
         async function confirmDeleteFromSettings() {
@@ -245,37 +330,66 @@
         applyTheme(currentTheme);
         function toggleDarkMode() { currentTheme = (currentTheme === 'dark') ? 'light' : 'dark'; localStorage.setItem('theme', currentTheme); applyTheme(currentTheme); }
 
+        // ผูกระบบคลิกวางรูปภาพ (Ctrl+V) ของหน้าสร้างโปรเจกต์ใหม่
         const pasteArea = document.getElementById('projectImageArea');
         if(pasteArea) {
             pasteArea.addEventListener('paste', function(e) {
-                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-                for (let i = 0; i < items.length; i++) {
-                    if (items[i].type.indexOf('image') !== -1) {
-                        const blob = items[i].getAsFile();
-                        selectedFileBlob = blob;
-                        const reader = new FileReader();
-                        reader.onload = function(event) { displayPreview(event.target.result); };
-                        reader.readAsDataURL(blob);
-                        e.preventDefault();
-                        break;
-                    }
-                }
+                handleClipboardPaste(e, (blob, base64) => {
+                    selectedFileBlob = blob;
+                    displayPreview(base64, 'add');
+                });
             });
             pasteArea.addEventListener('click', () => pasteArea.focus());
         }
 
-        function displayPreview(base64Data) {
-            document.getElementById('pastePrompt').classList.add('hidden');
-            document.getElementById('imagePreviewContainer').classList.remove('hidden');
-            document.getElementById('imagePreview').src = base64Data;
+        // ผูกระบบคลิกวางรูปภาพ (Ctrl+V) ของหน้าแก้ไขโปรเจกต์
+        const editPasteArea = document.getElementById('editProjectImageArea');
+        if(editPasteArea) {
+            editPasteArea.addEventListener('paste', function(e) {
+                handleClipboardPaste(e, (blob, base64) => {
+                    editSelectedFileBlob = blob;
+                    isProjectImageChanged = true;
+                    displayPreview(base64, 'edit');
+                });
+            });
+            editPasteArea.addEventListener('click', () => editPasteArea.focus());
         }
 
-        function clearPastedImage(event) {
+        function handleClipboardPaste(e, callback) {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = function(event) { callback(blob, event.target.result); };
+                    reader.readAsDataURL(blob);
+                    e.preventDefault();
+                    break;
+                }
+            }
+        }
+
+        function displayPreview(base64Data, mode) {
+            const isEdit = mode === 'edit';
+            document.getElementById(isEdit ? 'editPastePrompt' : 'pastePrompt').classList.add('hidden');
+            document.getElementById(isEdit ? 'editImagePreviewContainer' : 'imagePreviewContainer').classList.remove('hidden');
+            document.getElementById(isEdit ? 'editImagePreview' : 'imagePreview').src = base64Data;
+        }
+
+        function clearPastedImage(event, mode) {
             if (event) event.stopPropagation();
-            selectedFileBlob = null;
-            document.getElementById('imagePreview').src = "";
-            document.getElementById('imagePreviewContainer').classList.add('hidden');
-            document.getElementById('pastePrompt').classList.remove('hidden');
+            if (mode === 'edit') {
+                editSelectedFileBlob = null;
+                isProjectImageChanged = true;
+                document.getElementById('editImagePreview').src = "";
+                document.getElementById('editImagePreviewContainer').classList.add('hidden');
+                document.getElementById('editPastePrompt').classList.remove('hidden');
+            } else {
+                selectedFileBlob = null;
+                document.getElementById('imagePreview').src = "";
+                document.getElementById('imagePreviewContainer').classList.add('hidden');
+                document.getElementById('pastePrompt').classList.remove('hidden');
+            }
         }
 
         fetchProjects();
