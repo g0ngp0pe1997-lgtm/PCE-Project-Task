@@ -624,8 +624,6 @@
             document.getElementById('taskModal').classList.add('hidden');
         }
 
-        fetchTasksOnline();
-        setInterval(fetchTasksOnline, 5000);
         // ➕ ฟังก์ชันดึงชื่อของโปรเจกต์ปัจจุบันมาโชว์ที่หัวเว็บและป้ายแคปซูลขวาบน
         async function fetchProjectName() {
             if(currentProjectId === 'default') {
@@ -648,6 +646,9 @@
                 document.getElementById('projectHeaderTitle').innerText = "📂 ไม่พบโครงการ";
             }
         }
+        fetchProjectName();   // สั่งดึงชื่อโปรเจกต์มาเปลี่ยนหัวเว็บและป้ายขวาบนทันที
+        fetchTasksOnline();   // สั่งดึงข้อมูลการ์ดงานในบอร์ด
+        setInterval(fetchTasksOnline, 5000);
     </script>
 </body>
 </html>
