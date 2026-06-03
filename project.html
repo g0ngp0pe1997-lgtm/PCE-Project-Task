@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <style>
-        .kanban-column { min-height: 450px; }
         .image-preview-area {
             border: 2px dashed #cbd5e1;
             transition: all 0.2s ease;
@@ -74,8 +73,11 @@
 
     <header class="bg-indigo-600 text-white p-4 shadow-md mb-8">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <h1 class="text-xl font-bold">🚀 Project Tracker</h1>
+            <h1 class="text-xl font-bold flex items-center gap-2">🚀 Project Tracker</h1>
             <div class="flex items-center gap-4">
+                <button onclick="window.location.href='index.html'" class="bg-indigo-700 hover:bg-indigo-800 px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition">
+                    🏠 กลับหน้าหลัก
+                </button>
                 <button onclick="toggleDarkMode()" id="themeBtn" class="flex items-center gap-2 bg-indigo-700 hover:bg-indigo-800 dark:bg-slate-800 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer shadow-sm">
                     🌙 โหมดมืด
                 </button>
@@ -141,7 +143,7 @@
                     <h3 class="font-bold text-slate-700 flex items-center gap-2">📌 📋 รอดำเนินการ</h3>
                     <span id="todo-count" class="bg-slate-200 text-slate-700 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
                 </div>
-                <div id="todo-list" class="kanban-column flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'todo')"></div>
+                <div id="todo-list" class="min-h-[450px] flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'todo')"></div>
             </div>
 
             <div class="bg-emerald-50 p-4 rounded-xl flex flex-col border border-transparent">
@@ -149,7 +151,7 @@
                     <h3 class="font-bold text-emerald-800 flex items-center gap-2">✅ เสร็จสิ้น</h3>
                     <span id="done-count" class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
                 </div>
-                <div id="done-list" class="kanban-column flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'done')"></div>
+                <div id="done-list" class="min-h-[450px] flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'done')"></div>
             </div>
 
             <div class="bg-amber-50 p-4 rounded-xl flex flex-col border border-transparent">
@@ -157,7 +159,7 @@
                     <h3 class="font-bold text-amber-800 flex items-center gap-2">✏️ แก้ไข</h3>
                     <span id="edit-count" class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
                 </div>
-                <div id="edit-list" class="kanban-column flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'edit')"></div>
+                <div id="edit-list" class="min-h-[450px] flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'edit')"></div>
             </div>
 
             <div class="bg-sky-50 p-4 rounded-xl flex flex-col border border-transparent">
@@ -165,7 +167,7 @@
                     <h3 class="font-bold text-sky-800 flex items-center gap-2">🎉 ตรวจผ่าน</h3>
                     <span id="approved-count" class="bg-sky-100 text-sky-800 text-xs px-2 py-0.5 rounded-full font-bold">0</span>
                 </div>
-                <div id="approved-list" class="kanban-column flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'approved')"></div>
+                <div id="approved-list" class="min-h-[450px] flex flex-col gap-3" ondragover="allowDrop(event)" ondrop="drop(event, 'approved')"></div>
             </div>
 
         </div>
@@ -242,18 +244,15 @@
     </div>
 
     <script>
-        // ผูกลิงก์และกุญแจโปรเจกต์จริงของคุณ เคลียร์ปัญหาอักษรเล็ก-ใหญ่เรียบร้อย 
         const SUPABASE_URL = "https://gmmjspsxqzknrltmihfs.supabase.co";
         const SUPABASE_ANON_KEY = "sb_publishable_MVVp7QwtiOyliz2m3cYJaQ_mMnsfVB7";
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let tasks = [];
 
-        // ➕ เพิ่มบรรทัดนี้เพื่อดักจับรหัสโปรเจกต์ที่เปิดอยู่
         const urlParams = new URLSearchParams(window.location.search);
         const currentProjectId = urlParams.get('proj') || 'default';
         
-        // ตัวแปรเก็บไฟล์รูปภาพดิบ (Blob/File) แทนการแปลงเป็น Base64
         let selectedFileBlob = null;
         let editSelectedFileBlob = null;
         let isImageClearedOrChanged = false;
@@ -273,7 +272,6 @@
             }
         }
 
-        // ฟังก์ชันช่วยอัปโหลดไฟล์ดิบเข้าสู่ Supabase Storage Bucket
         async function uploadToStorage(fileBlob, taskId) {
             if (!fileBlob) return null;
             const fileExt = fileBlob.type.split('/')[1] || 'png';
@@ -288,7 +286,6 @@
                 return null;
             }
             
-            // สร้าง Public URL เพื่อนำมาเปิดดูรูปบนหน้าจอเว็บ
             const { data: urlData } = supabaseClient.storage
                 .from('task-images')
                 .getPublicUrl(fileName);
@@ -483,7 +480,6 @@
             if(document.getElementById('approved-count')) document.getElementById('approved-count').innerText = tasks.filter(t => t.status === 'approved').length;
         }
 
-        // ระบบบันทึกงานใหม่: อัปโหลดรูปภาพขึ้น Storage ก่อน แล้วค่อยบันทึกลงฐานข้อมูล
         async function addNewTask() {
             const titleInput = document.getElementById('taskTitle');
             const assigneeInput = document.getElementById('taskAssignee');
@@ -494,7 +490,6 @@
             const taskId = 'task-' + Date.now();
             let imageUrl = "";
 
-            // หากมีการวางรูปภาพ ให้ส่งรูปดิบขึ้นถัง Storage ก่อน
             if (selectedFileBlob) {
                 imageUrl = await uploadToStorage(selectedFileBlob, taskId) || "";
             }
@@ -504,7 +499,7 @@
                 title: titleInput.value,
                 assignee: assigneeInput.value,
                 description: descInput.value,
-                image: imageUrl, // เก็บเป็นลิงก์ URL สั้นๆ ประหยัดพื้นที่ฐานข้อมูล
+                image: imageUrl, 
                 status: 'todo',
                 project_id: currentProjectId
             };
@@ -548,7 +543,6 @@
             document.getElementById('editModal').classList.add('hidden');
         }
 
-        // ระบบบันทึกการแก้ไขงานออนไลน์
         async function saveTaskEdit() {
             const id = document.getElementById('editTaskId').value;
             const title = document.getElementById('editTaskTitle').value;
@@ -631,7 +625,6 @@
         }
 
         fetchTasksOnline();
-        // ตั้งหน้าระบบอัปเดตเรียลไทม์เช็กบอร์ดทุกๆ 5 วินาที
         setInterval(fetchTasksOnline, 5000);
     </script>
 </body>
