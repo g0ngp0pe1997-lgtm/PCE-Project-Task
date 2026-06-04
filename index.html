@@ -63,7 +63,6 @@
         </div>
     </main>
 
-    <!-- หน้าต่าง Popup สำหรับสร้างโปรเจกต์ใหม่ -->
     <div id="projectModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 shadow-2xl" onclick="closeNewProjectModal()">
         <div class="bg-white rounded-xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto border border-transparent" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
@@ -102,7 +101,6 @@
         </div>
     </div>
 
-    <!-- หน้าต่าง Popup สำหรับตั้งค่าและแก้ไขโปรเจกต์ (Settings & Edit Modal) -->
     <div id="settingsModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 shadow-2xl" onclick="closeSettingsModal()">
         <div class="bg-white rounded-xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto border border-transparent" onclick="event.stopPropagation()">
             <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-3">
@@ -154,7 +152,7 @@
         const SUPABASE_ANON_KEY = "sb_publishable_MVVp7QwtiOyliz2m3cYJaQ_mMnsfVB7";
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        let projectsList = []; // เก็บอาร์เรย์โปรเจกต์ทั้งหมดไว้ใช้อ้างอิงตอนแก้ไขข้อมูล
+        let projectsList = []; 
         let selectedFileBlob = null;
         let editSelectedFileBlob = null;
         let isProjectImageChanged = false;
@@ -165,7 +163,7 @@
                 document.getElementById('projectContainer').innerHTML = `<div class="text-center text-rose-500 py-12">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>`;
                 return;
             }
-            projectsList = data; // อัปเดตข้อมูลลิสต์โปรเจกต์หลัก
+            projectsList = data; 
             renderProjects(data);
         }
 
@@ -242,7 +240,6 @@
             });
         }
 
-        // ระบบเปิดหน้าต่างตั้งค่าพร้อมโหลดค่าเดิมมาหยอดลงช่องฟอร์ม
         function openSettingsModal(event, id) {
             event.stopPropagation();
             const project = projectsList.find(p => p.id === id);
@@ -270,7 +267,6 @@
             document.getElementById('settingsModal').classList.add('hidden');
         }
 
-        // ฟังก์ชันช่วยอัปเดตบันทึกข้อมูลแก้ไขโปรเจกต์ลง Supabase Database
         async function saveProjectEdit() {
             const id = document.getElementById('settingsProjectId').value;
             const name = document.getElementById('editProjectName').value;
@@ -330,7 +326,6 @@
         applyTheme(currentTheme);
         function toggleDarkMode() { currentTheme = (currentTheme === 'dark') ? 'light' : 'dark'; localStorage.setItem('theme', currentTheme); applyTheme(currentTheme); }
 
-        // ผูกระบบคลิกวางรูปภาพ (Ctrl+V) ของหน้าสร้างโปรเจกต์ใหม่
         const pasteArea = document.getElementById('projectImageArea');
         if(pasteArea) {
             pasteArea.addEventListener('paste', function(e) {
@@ -342,7 +337,6 @@
             pasteArea.addEventListener('click', () => pasteArea.focus());
         }
 
-        // ผูกระบบคลิกวางรูปภาพ (Ctrl+V) ของหน้าแก้ไขโปรเจกต์
         const editPasteArea = document.getElementById('editProjectImageArea');
         if(editPasteArea) {
             editPasteArea.addEventListener('paste', function(e) {
